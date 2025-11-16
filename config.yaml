@@ -1,0 +1,7 @@
+
+poll_interval: 2
+ticker_cache_ttl: 5
+historical_cache_ttl: 60
+rate_limit_per_minute: 60  # requests per minute per IP
+api_keys:
+  - "demo-key-123"  # replace with real keys

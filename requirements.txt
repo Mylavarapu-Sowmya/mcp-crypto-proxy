@@ -1,0 +1,11 @@
+fastapi==0.95.2
+uvicorn[standard]==0.22.0
+ccxt==3.0.76
+cachetools==5.4.0
+httpx==0.24.1
+pydantic==1.10.12
+PyYAML==6.0
+pytest==7.4.0
+pytest-asyncio==0.22.0
+prometheus-client==0.16.0
+tenacity==8.2.2

@@ -1,0 +1,10 @@
+
+__pycache__/
+.env
+.mypy_cache/
+dist/
+build/
+*.pyc
+.vscode/
+node_modules/
+frontend/build/
