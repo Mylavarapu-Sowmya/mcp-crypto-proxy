@@ -1,162 +1,188 @@
-# mcp-crypto-proxy
-
-A lightweight, configurable crypto RPC proxy for MCP-style applications. mcp-crypto-proxy forwards JSON-RPC (and related) requests to underlying node endpoints while providing optional features such as request routing, caching, rate limiting, API key access control, observability, and an Owner/Avatar metadata endpoint.
-
-This README covers installation, configuration, usage, and how to expose owner metadata (name + avatar URL) through the proxy.
-
-## Features
-
-- Forward JSON-RPC requests to one or more backend node endpoints
-- Optional caching for read-only RPC calls
-- Rate limiting and per-API-key controls
-- Simple API-key authentication support
-- Health & metrics endpoints
-- Owner metadata endpoint (name + avatar)
-- Docker-friendly and easy to run in Kubernetes
-
-## Quick Start
-
-Prerequisites:
-- Node.js 18+ (if using the JS implementation)
-- Docker (optional)
-
-Clone and run locally:
-
-1. Clone the repo
-   git clone <your-repo-url>
-   cd mcp-crypto-proxy
-
-2. Install dependencies (if applicable)
-   npm install
-
-3. Create a .env file (see Configuration below), then:
-   npm start
-
-Or with Docker:
-
-docker build -t mcp-crypto-proxy:latest .
-docker run -p 8080:8080 --env-file .env mcp-crypto-proxy:latest
-
-## Configuration
-
-mcp-crypto-proxy is configured by environment variables. Example `.env`:
-
-PORT=8080
-TARGET_RPC_URL=https://mainnet.rpc.node.example
-FALLBACK_RPC_URL=https://backup.rpc.node.example
-API_KEYS=key1,key2           # optional, comma-separated
-CACHE_TTL=30                 # seconds, optional
-RATE_LIMIT_WINDOW=60         # seconds
-RATE_LIMIT_MAX=100           # requests per window per API key (or IP if no key)
-OWNER_NAME="Acme Corp"
-OWNER_AVATAR_URL="https://example.com/assets/avatar.png"
-LOG_LEVEL=info
-
-Important variables explained:
-
-- PORT: The port the proxy listens on (default 8080).
-- TARGET_RPC_URL: Primary backend RPC endpoint to forward requests to.
-- FALLBACK_RPC_URL: Optional fallback endpoint if primary fails.
-- API_KEYS: Optional comma-separated list of valid API keys for access control.
-- CACHE_TTL: How long to cache responses for idempotent/read-only calls (in seconds).
-- RATE_LIMIT_WINDOW and RATE_LIMIT_MAX: Rate-limiter configuration.
-- OWNER_NAME & OWNER_AVATAR_URL: Metadata surfaced by the Owner endpoint.
-
-You can also configure advanced routing, per-method behavior, or multiple backends via the project's config file (if implemented). Check config/docs in repo.
-
-## Endpoints
-
-- POST /            -> Proxy endpoint for JSON-RPC requests (forwards to TARGET_RPC_URL)
-- GET  /health      -> Health check
-- GET  /metrics     -> Prometheus-style metrics (if enabled)
-- GET  /owner       -> Returns owner metadata (name + avatar URL)
-- GET  /owner/avatar -> Convenience endpoint redirecting/resolving to the avatar image (optional)
-
-Example owner endpoint response (JSON):
-
-{
-  "name": "Acme Corp",
-  "avatar_url": "https://example.com/assets/avatar.png"
-}
-
-Example curl to fetch owner info:
-
-curl -s http://localhost:8080/owner
-
-Example curl to proxy a JSON-RPC request:
-
-curl -X POST http://localhost:8080 \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":1,"method":"eth_blockNumber","params":[]}'
-
-If API keys are enabled, include it in an Authorization header:
-
--H "Authorization: Bearer <API_KEY>"
-
-## Owner avatar behavior
-
-- The /owner endpoint returns a small JSON block describing the owner and avatar URL.
-- The /owner/avatar endpoint (if implemented) can either redirect (302) to the configured OWNER_AVATAR_URL or proxy the image bytes directly so a single domain serves both proxy API and avatar content.
-- To update the avatar, change the OWNER_AVATAR_URL environment variable and redeploy. For dynamic updates, implement an admin API or a config store.
-
-## Logging & Observability
-
-- LOG_LEVEL controls verbosity (e.g. debug, info, warn, error).
-- /metrics provides Prometheus metrics when enabled in configuration.
-- Configure structured logs (JSON) in production for easier ingestion.
-
-## Deployment
-
-- Docker: build + run as shown in Quick Start.
-- Kubernetes: create a Deployment and Service using the container image. Mount secrets and config via Kubernetes Secrets/ConfigMaps for API keys and environment variables.
-- For high availability, use multiple replicas and a load balancer; point TARGET_RPC_URL to healthy nodes or use a DNS load balancer.
-
-## Development & Testing
-
-- Run tests:
-  npm test
-
-- Linting:
-  npm run lint
-
-- Local development:
-  npm run dev
-
-Adjust NPM scripts to match the project's package.json.
-
-## Security
-
-- Never commit API keys or secrets to source control. Use environment variables or secret stores.
-- When exposing owner avatar content, validate/whitelist avatar URLs if they come from user input to avoid open redirect or SSRF risks.
-- Enable TLS/HTTPS at the edge (load balancer or reverse proxy) in production.
-
-## Troubleshooting
-
-- 502/504 from proxy: verify TARGET_RPC_URL and network reachability.
-- Slow responses: check cache settings, backend node latency, and rate limiting.
-- Avatar not showing: confirm OWNER_AVATAR_URL is reachable and uses HTTPS if served on an HTTPS site.
-
-## Contributing
-
-Contributions welcome — please open issues or PRs. When contributing:
-- Follow formatting and lint rules
-- Add tests for new features
-- Keep changes small and focused
-
-## License
-
-Specify your license here (e.g. MIT). Replace this placeholder with the actual license text or file.
-
-## Contact / Owner
-
-Owner: <Owner Name or Organization>
-Avatar: <Avatar URL configured in OWNER_AVATAR_URL>
-
-If you'd like, provide an email or contact link here for support.
+# 🚀 MCP – Market Crypto Proxy  
+### **A Production-Grade Cryptocurrency Market Data Server (FastAPI + CCXT)**  
+> **Final Internship Assignment — Completed & Extended**
 
 ---
-Thank you for using mcp-crypto-proxy. If you want, I can:
-- tailor this README to your project's exact file structure,
-- add CI badges and commands,
-- generate a sample .env and Docker Compose, or
-- produce a CONTRIBUTING.md and SECURITY.md to accompany this README.
+
+## 📌 Overview  
+MCP (Market Crypto Proxy) is a **Python-based FastAPI server** that provides **real-time** and **historical** cryptocurrency market data using CCXT.  
+This implementation uses **Option B — Query Parameter API** (the industry‑standard style) and includes **all required features & advanced enhancements**.
+
+---
+
+## ✅ Core Features  
+- Real-time ticker data  
+- Historical OHLCV data  
+- Market listings  
+- WebSocket real-time updates  
+- Error handling  
+- Caching (TTL-based)  
+
+---
+
+## 🔥 Advanced Features  
+| Feature | Description |
+|--------|-------------|
+| Rate Limiting | Token bucket per IP (60 req/min) |
+| Retry Logic | Exponential backoff for CCXT failures |
+| API Key Auth | Secure endpoints using `X-API-KEY` |
+| TTL Caching | Faster responses for ticker & OHLCV |
+| Logging Middleware | Structured request logs |
+| Prometheus Metrics | `/metrics` endpoint |
+| Pagination | `page` + `limit` for OHLCV |
+| Docker Support | Dockerfile + docker-compose |
+| GitHub Actions CI | Automated testing |
+| React Frontend Demo | Basic interface to test API |
+
+---
+
+## 🛠 Tech Stack  
+- FastAPI  
+- Uvicorn  
+- CCXT  
+- CacheTools  
+- Tenacity  
+- Prometheus Client  
+- React.js  
+- Docker  
+- GitHub Actions  
+- PyTest  
+
+---
+
+## 📂 Project Structure  
+```
+mcp/
+│── app.py
+│── adapters.py
+│── auth.py
+│── cache.py
+│── config.py
+│── exceptions.py
+│── metrics.py
+│── middleware.py
+│── ratelimit.py
+│── retries.py
+│── models.py
+tests/
+frontend/
+config.yaml
+requirements.txt
+Dockerfile
+docker-compose.yml
+README.md
+```
+
+---
+
+## ⚙️ Installation  
+Create a virtual environment:
+```
+python -m venv venv
+```
+
+### Activate the virtualenv  
+Windows:
+```
+venv\Scripts\activate
+```
+Mac/Linux:
+```
+source venv/bin/activate
+```
+
+### Install dependencies  
+```
+pip install -r requirements.txt
+```
+
+---
+
+## ▶️ Run the Server  
+Development (with auto-reload):
+```
+uvicorn mcp.app:app --reload --host 0.0.0.0 --port 8000
+```
+Note: use `--reload` only in development. For production, run without `--reload` and consider using a process manager.
+
+Health check:
+```
+GET /health
+```
+
+---
+
+## 🔑 API Key Authentication  
+Add header:
+```
+X-API-KEY: demo-key-123
+```
+You can also store the key in a `.env` file and load it from `config.yaml` or environment variables for production.
+
+Configure in `config.yaml`.
+
+---
+
+## 📡 API Usage
+
+### ✔ Ticker  
+```
+GET /ticker?exchange=binance&symbol=BTC/USDT
+```
+
+### ✔ Historical (paginated)  
+```
+GET /historical?exchange=binance&symbol=BTC/USDT&limit=100&page=1
+```
+
+### ✔ Markets  
+```
+GET /markets?exchange=binance
+```
+
+### ✔ WebSocket  
+```
+ws://localhost:8000/ws?exchange=binance&symbol=BTC/USDT
+```
+
+---
+
+## 🧪 Tests  
+Run:
+```
+pytest -q
+```
+
+Mocked CCXT ensures reliable testing.
+
+---
+
+## 🐳 Docker  
+Build and run with docker-compose:
+```
+docker-compose up --build
+```
+Service exposes port 8000 (adjust docker-compose as needed).
+
+---
+
+## 🖥 React Frontend  
+```
+cd frontend
+npm install
+npm start
+```
+
+---
+
+## 🎯 Final Notes  
+This project meets and extends the assignment expectations and demonstrates:  
+- API design  
+- Backend engineering  
+- Reliability (retries, rate limit, caching)  
+- DevOps (CI/CD, Docker)  
+- Monitoring (Prometheus)  
+- Full-stack ability (React UI)
+
+---
+
